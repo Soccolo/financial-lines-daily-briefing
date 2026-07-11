@@ -19,11 +19,11 @@ The workflow runs on GitHub Actions, so your computer and Codex do not need to r
 
 ## Token and cost controls
 
-The default model is `gpt-5-mini`, a cost-efficient choice for precise, well-scoped summarisation. The code
+The default model is `gpt-5.6-luna`, OpenAI's current model for cost-sensitive, high-volume workloads. The code
 does the expensive-looking workâ€”search, ranking, deduplication, article fetching and trimmingâ€”without a
 model. Only 14 extracts of at most 2,200 characters enter one request, and the output is capped at 5,000
-tokens. You can use `gpt-5.4-mini` for stronger editorial judgement or experiment with `gpt-5-nano` for
-lower cost, but nano may be less reliable for nuanced pricing implications and mathematical tutorials.
+tokens. If absolute minimum spend matters more than capability, `gpt-5-nano` is cheaper; however, it may be
+less reliable for nuanced pricing implications and mathematical tutorials.
 
 ## One-time setup
 
@@ -63,7 +63,7 @@ Optional repository variables can be added under **Settings â†’ Secrets and
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `OPENAI_MODEL` | `gpt-5-mini` | Model used for the single daily generation call |
+| `OPENAI_MODEL` | `gpt-5.6-luna` | Model used for the single daily generation call |
 
 Set `ARTICLE_COUNT` in the workflow to `7` if you prefer seven articles. The default is eight.
 
