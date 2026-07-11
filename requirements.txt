@@ -1,6 +1,8 @@
 beautifulsoup4==4.13.4
 feedparser==6.0.11
+matplotlib==3.10.3
 openai==1.93.0
 pydantic==2.11.7
 requests==2.32.4
 trafilatura==2.0.0
+
