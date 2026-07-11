@@ -32,10 +32,11 @@ class Config:
 
         return cls(
             openai_api_key=required["OPENAI_API_KEY"],
-            openai_model=os.getenv("OPENAI_MODEL", "gpt-5-mini").strip(),
+            openai_model=os.getenv("OPENAI_MODEL", "gpt-5.6-luna").strip(),
             gmail_username=required["GMAIL_USERNAME"],
             gmail_app_password=required["GMAIL_APP_PASSWORD"],
             email_to=required["EMAIL_TO"],
             article_count=article_count,
             timezone=os.getenv("TIMEZONE", "Europe/London").strip(),
         )
+
