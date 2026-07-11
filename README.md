@@ -15,7 +15,8 @@ The workflow runs on GitHub Actions, so your computer and Codex do not need to r
 - Produces exactly 8 stories by default, five executive bullets, pricing implications, direct sources,
   2â€“3 watch items, and one worked tutorial.
 - Checks the previous seven days of Gmail Sent mail and excludes previously used URLs when IMAP is available.
-- Sends a multipart plain-text and HTML email through Gmail.
+- Sends a multipart plain-text and HTML email through Gmail, with tutorial formulas rendered as embedded images
+  so they display cleanly in email clients.
 
 ## Token and cost controls
 
