@@ -91,7 +91,9 @@ For each story, retain its source_id, use a short factual headline, write a 2-se
 selection, portfolio steering or reserving. The five executive bullets must capture the day's main signals.
 
 Add one self-contained {topic} tutorial. Aim for 250-400 words across its fields, include a compact worked
-example and a practical Financial Lines pricing application. Put mathematical notation in plain-text LaTeX.
+example and a practical Financial Lines pricing application. If using a formula, provide one short, valid
+Matplotlib-mathtext-compatible TeX expression (for example, p = \\frac{{x}}{{n}}). Do not use display-math
+delimiters, environments, or package-specific commands.
 Close with 2-3 forward-looking signals. Do not reproduce long source passages.
 
 Candidates:
@@ -115,3 +117,4 @@ Candidates:
     if len(set(chosen_ids)) != article_count or not set(chosen_ids).issubset(valid_ids):
         raise RuntimeError("The model returned duplicate or unknown source IDs")
     return briefing
+
