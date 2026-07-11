@@ -2,15 +2,52 @@ from __future__ import annotations
 
 import html
 import smtplib
+from dataclasses import dataclass
 from datetime import datetime
 from email.message import EmailMessage
+from io import BytesIO
+
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.figure import Figure
 
 from briefing.generate import Briefing
 from briefing.news import Article
 
 
+@dataclass(frozen=True)
+class InlineImage:
+    cid: str
+    data: bytes
+    filename: str
+
+
 def _source_map(articles: list[Article]) -> dict[str, Article]:
     return {article.id: article for article in articles}
+
+
+def render_formula_png(formula: str) -> bytes | None:
+    """Render a compact TeX formula to a Gmail-safe inline PNG.
+
+    Email clients strip JavaScript, so MathJax/KaTeX cannot typeset formulae in
+    an email. Matplotlib's built-in mathtext supports the compact subset asked
+    of the model and keeps the image fully embedded in the outgoing message.
+    """
+    tex = formula.strip()
+    if not tex:
+        return None
+    if not (tex.startswith("$") and tex.endswith("$")):
+        tex = f"${tex}$"
+
+    try:
+        figure = Figure(figsize=(1.0, 0.55), dpi=200)
+        figure.patch.set_alpha(0)
+        FigureCanvasAgg(figure)
+        figure.text(0.02, 0.25, tex, fontsize=15, color="#17202a")
+        buffer = BytesIO()
+        figure.savefig(buffer, format="png", transparent=True, bbox_inches="tight", pad_inches=0.08)
+        return buffer.getvalue()
+    except Exception:
+        return None
 
 
 def render_text(briefing: Briefing, articles: list[Article], now: datetime, research_hours: int) -> str:
@@ -54,7 +91,9 @@ def render_text(briefing: Briefing, articles: list[Article], now: datetime, rese
     return "\n".join(line for line in lines if line is not None)
 
 
-def render_html(briefing: Briefing, articles: list[Article], now: datetime, research_hours: int) -> str:
+def render_html(
+    briefing: Briefing, articles: list[Article], now: datetime, research_hours: int
+) -> tuple[str, list[InlineImage]]:
     sources = _source_map(articles)
     executive = "".join(f"<li>{html.escape(item)}</li>" for item in briefing.executive_summary)
     story_blocks = []
@@ -70,10 +109,24 @@ def render_html(briefing: Briefing, articles: list[Article], now: datetime, rese
             Â· {source.published_at:%d %b %Y, %H:%M UTC}</p>
             </section>"""
         )
+
     tutorial = briefing.tutorial
-    formula = f"<p><strong>Formula:</strong> <code>{html.escape(tutorial.formula)}</code></p>" if tutorial.formula else ""
+    formula_png = render_formula_png(tutorial.formula)
+    inline_images: list[InlineImage] = []
+    if formula_png:
+        image = InlineImage(cid="tutorial-formula", data=formula_png, filename="tutorial-formula.png")
+        inline_images.append(image)
+        formula = (
+            f'<p><strong>Formula:</strong><br><img src="cid:{image.cid}" '
+            'alt="Tutorial formula" style="max-width:100%;height:auto;margin-top:6px"></p>'
+        )
+    elif tutorial.formula:
+        formula = f"<p><strong>Formula:</strong> <code>{html.escape(tutorial.formula)}</code></p>"
+    else:
+        formula = ""
+
     watch = "".join(f"<li>{html.escape(item)}</li>" for item in briefing.what_to_watch)
-    return f"""<!doctype html><html><body style="margin:0;background:#f4f6f8;font-family:Arial,sans-serif;color:#17202a">
+    body = f"""<!doctype html><html><body style="margin:0;background:#f4f6f8;font-family:Arial,sans-serif;color:#17202a">
     <main style="max-width:760px;margin:auto;background:white;padding:32px">
     <h1 style="font-size:25px;margin:0 0 6px">Financial Lines Daily Briefing</h1>
     <p style="color:#5b6573;margin:0 0 24px">{now:%d %B %Y} Â· Previous {research_hours} hours</p>
@@ -91,6 +144,7 @@ def render_html(briefing: Briefing, articles: list[Article], now: datetime, rese
     <h2 style="font-size:18px">What to watch</h2><ul>{watch}</ul>
     <p style="font-size:12px;color:#667085;margin-top:32px">Generated automatically from public sources. Verify material developments before business use.</p>
     </main></body></html>"""
+    return body, inline_images
 
 
 def send_email(
@@ -101,6 +155,7 @@ def send_email(
     subject: str,
     text_body: str,
     html_body: str,
+    inline_images: list[InlineImage] | None = None,
 ) -> None:
     message = EmailMessage()
     message["From"] = username
@@ -108,6 +163,16 @@ def send_email(
     message["Subject"] = subject
     message.set_content(text_body)
     message.add_alternative(html_body, subtype="html")
+    html_part = message.get_payload()[-1]
+    for image in inline_images or []:
+        html_part.add_related(
+            image.data,
+            maintype="image",
+            subtype="png",
+            cid=f"<{image.cid}>",
+            filename=image.filename,
+            disposition="inline",
+        )
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as smtp:
         smtp.login(username, app_password)
         smtp.send_message(message)
