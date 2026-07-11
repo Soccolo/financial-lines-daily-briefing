@@ -72,7 +72,7 @@ Set `ARTICLE_COUNT` in the workflow to `7` if you prefer seven articles. The def
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
-pip install -r requirements-dev.txt
+pip install -r requirements-dev.txt -e .
 pytest -q
 python -m briefing.main
 ```
@@ -88,5 +88,4 @@ does not auto-load `.env`, reducing the chance of accidentally using a local sec
 - Gmail IMAP deduplication is best-effort. If it is unavailable, within-run title deduplication still applies.
 - The output is an intelligence aid, not actuarial, legal, underwriting, or investment advice. Verify material
   developments against primary sources before business use.
-
 
