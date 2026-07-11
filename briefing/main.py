@@ -47,13 +47,15 @@ def run() -> None:
         now=now,
     )
     subject = f"Financial Lines Daily Briefing â€” {now:%d %b %Y}"
+    html_body, inline_images = render_html(briefing, candidates, now, research_hours)
     send_email(
         username=config.gmail_username,
         app_password=config.gmail_app_password,
         recipient=config.email_to,
         subject=subject,
         text_body=render_text(briefing, candidates, now, research_hours),
-        html_body=render_html(briefing, candidates, now, research_hours),
+        html_body=html_body,
+        inline_images=inline_images,
     )
     logging.info("Sent %s articles using %s", len(briefing.articles), config.openai_model)
 
