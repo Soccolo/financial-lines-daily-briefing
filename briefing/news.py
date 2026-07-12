@@ -204,6 +204,30 @@ def _decode_subject(raw_subject: str | None) -> str:
     return "".join(parts)
 
 
+def sent_briefing_today(username: str, app_password: str, subject: str) -> bool:
+    """Return whether the exact daily briefing subject already appears in Sent Mail."""
+    try:
+        with imaplib.IMAP4_SSL("imap.gmail.com") as mailbox:
+            mailbox.login(username, app_password)
+            status, _ = mailbox.select('"[Gmail]/Sent Mail"', readonly=True)
+            if status != "OK":
+                return False
+            since = datetime.now().strftime("%d-%b-%Y")
+            status, data = mailbox.search(None, "SINCE", since, "SUBJECT", '"Financial Lines Daily Briefing"')
+            if status != "OK" or not data:
+                return False
+            for message_id in data[0].split()[-10:]:
+                status, payload = mailbox.fetch(message_id, "(RFC822.HEADER)")
+                if status != "OK" or not payload or not isinstance(payload[0], tuple):
+                    continue
+                message = email.message_from_bytes(payload[0][1])
+                if _decode_subject(message.get("Subject")) == subject:
+                    return True
+    except Exception as exc:
+        LOGGER.warning("Could not check whether today's briefing was sent: %s", exc)
+    return False
+
+
 def recent_sent_urls(username: str, app_password: str, days: int = 7) -> set[str]:
     urls: set[str] = set()
     try:
@@ -237,3 +261,4 @@ def recent_sent_urls(username: str, app_password: str, days: int = 7) -> set[str
 
 def exclude_recent(articles: list[Article], recent_urls: set[str]) -> list[Article]:
     return [article for article in articles if canonical_url(article.url) not in recent_urls]
+
