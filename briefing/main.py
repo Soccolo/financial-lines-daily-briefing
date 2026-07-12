@@ -13,12 +13,14 @@ from briefing.news import (
     enrich_articles,
     exclude_recent,
     recent_sent_urls,
+    sent_briefing_today,
     select_candidates,
 )
 
 
 def should_run(now: datetime) -> bool:
-    return os.getenv("GITHUB_EVENT_NAME") != "schedule" or now.hour == 7
+    """Allow late GitHub schedules through the morning, but not all day."""
+    return os.getenv("GITHUB_EVENT_NAME") != "schedule" or 7 <= now.hour < 12
 
 
 def run() -> None:
@@ -26,7 +28,12 @@ def run() -> None:
     config = Config.from_env()
     now = datetime.now(ZoneInfo(config.timezone))
     if not should_run(now):
-        logging.info("Skipping duplicate DST schedule at local hour %s", now.hour)
+        logging.info("Skipping scheduled run outside the 07:00-12:00 London delivery window")
+        return
+
+    subject = f"Financial Lines Daily Briefing — {now:%d %b %Y}"
+    if sent_briefing_today(config.gmail_username, config.gmail_app_password, subject):
+        logging.info("Briefing already sent for the London date %s", now.date())
         return
 
     recent_urls = recent_sent_urls(config.gmail_username, config.gmail_app_password)
@@ -46,7 +53,7 @@ def run() -> None:
         article_count=config.article_count,
         now=now,
     )
-    subject = f"Financial Lines Daily Briefing â€” {now:%d %b %Y}"
+    subject = f"Financial Lines Daily Briefing — {now:%d %b %Y}"
     html_body, inline_images = render_html(briefing, candidates, now, research_hours)
     send_email(
         username=config.gmail_username,
