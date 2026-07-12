@@ -2,7 +2,7 @@ name: Daily Financial Lines Briefing
 
 on:
   schedule:
-    # GitHub cron is UTC. Both times are scheduled; the Python time gate keeps 07:00 Europe/London across DST.
+    # GitHub cron is UTC. Both times cover UK daylight saving; code accepts delayed morning starts and sends once per London date.
     - cron: "0 6 * * *"
     - cron: "0 7 * * *"
   workflow_dispatch:
